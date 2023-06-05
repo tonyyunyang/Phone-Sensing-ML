@@ -8,6 +8,8 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+# Additional imports
+from torch.utils.mobile_optimizer import optimize_for_mobile
 
 class SpectrogramDataset(torchvision.datasets.ImageFolder):
     def __init__(self, root, transform=None):
@@ -155,6 +157,25 @@ for epoch in range(num_epochs):
           f'Validation Acc: {valid_acc:.2f}%')
 
 print('Finished Training')
+
+# Save the PyTorch model
+torch.save(model.state_dict(), 'model.pth')
+
+# Get the device
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Move the model to the correct device
+model.to(device)
+
+# Ensure the input data is also on the correct device
+example = torch.rand(1, 3, 20, 100)
+example = example.to(device)
+
+# Now you can trace your model
+traced_script_module = torch.jit.trace(model, example)
+
+optimized_torchscript_model = optimize_for_mobile(traced_script_module)
+optimized_torchscript_model.save("model.ptl")
 
 # Now, let's plot our losses and accuracies over epochs
 epochs = range(1, num_epochs+1)
