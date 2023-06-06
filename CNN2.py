@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
+from torch.utils.mobile_optimizer import optimize_for_mobile
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
@@ -150,10 +151,10 @@ for epoch in range(num_epochs):
     # Save the model if it is the best so far
     if val_losses[-1] < best_val_loss:
         best_val_loss = val_losses[-1]
-        torch.save(model.state_dict(), 'best_model.pth')
+        torch.save(model.state_dict(), 'best_model.pt')
 
 # Load the best model
-model.load_state_dict(torch.load('best_model.pth'))
+model.load_state_dict(torch.load('best_model.pt'))
 # Testing
 test_correct = 0
 # Initialize lists for predicted labels and true labels
@@ -178,7 +179,8 @@ print('Test Accuracy: {:.2f}'.format(test_acc))
 model.eval()
 example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
 traced_script_module = torch.jit.trace(model, example_input)
-traced_script_module.save("model_android.pt")
+traced_script_module_optimized = optimize_for_mobile(traced_script_module)
+traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
 
 # Plot the training and validation loss
 fig, axs = plt.subplots(2)
