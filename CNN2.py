@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms, models
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix
@@ -86,7 +86,6 @@ class CNN(nn.Module):
         return out
 model = CNN().to(device) # Move the model to GPU
 
-
 # Define the loss function and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
@@ -96,6 +95,8 @@ train_losses = []
 val_losses = []
 train_accs = []
 val_accs = []
+# Initial best loss
+best_val_loss = float('inf')
 
 # Training loop
 for epoch in range(num_epochs):
@@ -145,7 +146,14 @@ for epoch in range(num_epochs):
     print(f'Train loss: {train_losses[-1]:.4f}, Acc: {train_acc:.2f}')
     print(f'Val loss: {val_losses[-1]:.4f}, Acc: {val_acc:.2f}')
     print('-' * 10)
+    
+    # Save the model if it is the best so far
+    if val_losses[-1] < best_val_loss:
+        best_val_loss = val_losses[-1]
+        torch.save(model.state_dict(), 'best_model.pth')
 
+# Load the best model
+model.load_state_dict(torch.load('best_model.pth'))
 # Testing
 test_correct = 0
 # Initialize lists for predicted labels and true labels
@@ -165,6 +173,12 @@ with torch.no_grad():
 
 test_acc = 100.0 * test_correct / len(test_dataset)
 print('Test Accuracy: {:.2f}'.format(test_acc))
+
+# After testing, convert to TorchScript and save for mobile
+model.eval()
+example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
+traced_script_module = torch.jit.trace(model, example_input)
+traced_script_module.save("model_android.pt")
 
 # Plot the training and validation loss
 fig, axs = plt.subplots(2)
