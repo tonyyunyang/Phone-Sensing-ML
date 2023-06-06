@@ -30,7 +30,7 @@ transform = transforms.Compose([
 ])
 
 # Create dataset
-dataset = SpectrogramDataset(root="Training_data/New (06.02 added, update this name each time)", transform=transform)
+dataset = SpectrogramDataset(root="Training_data\New (06.06 added, update this name each time)", transform=transform)
 
 # Create training, validation, and test splits
 num_train = len(dataset)
@@ -71,7 +71,7 @@ class CRNN(nn.Module):
             nn.MaxPool2d(2),
         )
         self.rnn = nn.GRU(input_size=32*5*25, hidden_size=128, num_layers=2, batch_first=True, dropout=0.5)
-        self.fc = nn.Linear(128, 7)  # Assuming 7 classes for location prediction
+        self.fc = nn.Linear(128, 9)  # Assuming 7 classes for location prediction
 
     def forward(self, x):
         x = self.cnn(x)
