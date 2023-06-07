@@ -85,7 +85,7 @@ class CNN(nn.Module):
         out = self.relu3(out)
         out = self.fc2(out)
         return out
-model = CNN().to(device) # Move the model to GPU
+model = CNN().to(device) # Move the model to GPU    
 
 # Define the loss function and optimizer
 criterion = nn.CrossEntropyLoss()
@@ -151,10 +151,17 @@ for epoch in range(num_epochs):
     # Save the model if it is the best so far
     if val_losses[-1] < best_val_loss:
         best_val_loss = val_losses[-1]
-        torch.save(model.state_dict(), 'best_model.pt')
+        # torch.save(model.state_dict(), 'best_model.pt')
+        torch.save(model, 'best_model.pt')
+        model.eval()
+        example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
+        traced_script_module = torch.jit.trace(model, example_input)
+        traced_script_module_optimized = optimize_for_mobile(traced_script_module)
+        traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
 
 # Load the best model
-model.load_state_dict(torch.load('best_model.pt'))
+# model.load_state_dict(torch.load('best_model.pt'))
+model = torch.load('best_model.pt')
 # Testing
 test_correct = 0
 # Initialize lists for predicted labels and true labels
@@ -176,11 +183,11 @@ test_acc = 100.0 * test_correct / len(test_dataset)
 print('Test Accuracy: {:.2f}'.format(test_acc))
 
 # After testing, convert to TorchScript and save for mobile
-model.eval()
-example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
-traced_script_module = torch.jit.trace(model, example_input)
-traced_script_module_optimized = optimize_for_mobile(traced_script_module)
-traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
+# model.eval()
+# example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
+# traced_script_module = torch.jit.trace(model, example_input)
+# traced_script_module_optimized = optimize_for_mobile(traced_script_module)
+# traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
 
 # Plot the training and validation loss
 fig, axs = plt.subplots(2)
