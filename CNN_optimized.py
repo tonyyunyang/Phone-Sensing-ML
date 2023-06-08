@@ -16,9 +16,9 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # Define paths and parameters
 base_dir = 'Training_data/ALL(06.08_added)'
-learning_rate = 0.0001
-num_epochs = 150
-batch_size = 32
+learning_rate = 0.00005
+num_epochs = 350
+batch_size = 128
 torch.manual_seed(42)
 
 # Check if CUDA is available and set PyTorch to use GPU
@@ -34,7 +34,7 @@ data_transforms = transforms.Compose([
 # Load the datasets
 full_dataset = datasets.ImageFolder(root=base_dir, transform=data_transforms)
 
-def stratified_split(dataset, test_size=0.05, val_size=0.05):
+def stratified_split(dataset, test_size=0.025, val_size=0.025):
     # get targets
     targets = np.array(dataset.targets)
     
@@ -200,17 +200,17 @@ for epoch in range(num_epochs):
     #     torch.save(model.state_dict(), 'best_model.pt')
     #     print('New best model saved with validation loss: ', best_val_loss)
     # Save the model if it is the best so far
-    # if val_acc > best_val_acc:  # If the current epoch's validation accuracy is greater than our stored best
-    #     best_val_acc = val_acc  # Update our best validation accuracy
-    #     torch.save(model.state_dict(), 'best_model.pt')  # Save the model state dict
-    #     print('New best model saved with validation accuracy: ', best_val_acc)
+    if val_acc > best_val_acc:  # If the current epoch's validation accuracy is greater than our stored best
+        best_val_acc = val_acc  # Update our best validation accuracy
+        torch.save(model.state_dict(), 'best_model.pt')  # Save the model state dict
+        print('New best model saved with validation accuracy: ', best_val_acc)
         
-torch.save(model.state_dict(), 'best_model.pt')
-model.eval()
-example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
-traced_script_module = torch.jit.trace(model, example_input)
-traced_script_module_optimized = optimize_for_mobile(traced_script_module)
-traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
+# torch.save(model.state_dict(), 'best_model.pt')
+# model.eval()
+# example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
+# traced_script_module = torch.jit.trace(model, example_input)
+# traced_script_module_optimized = optimize_for_mobile(traced_script_module)
+# traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
 
 # Load the best model
 model.load_state_dict(torch.load('best_model.pt'))

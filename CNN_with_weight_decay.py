@@ -34,7 +34,7 @@ data_transforms = transforms.Compose([
 # Load the datasets
 full_dataset = datasets.ImageFolder(root=base_dir, transform=data_transforms)
 
-def stratified_split(dataset, test_size=0.05, val_size=0.05):
+def stratified_split(dataset, test_size=0.025, val_size=0.025):
     # get targets
     targets = np.array(dataset.targets)
     
