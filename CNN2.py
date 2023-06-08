@@ -15,7 +15,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 # Define paths and parameters
 base_dir = 'Training_data/New (06.07 added, update this name each time)'
 learning_rate = 0.0001
-num_epochs = 300
+num_epochs = 250
 batch_size = 32
 torch.manual_seed(42)
 
