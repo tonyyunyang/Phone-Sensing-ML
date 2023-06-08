@@ -13,10 +13,11 @@ from torch.utils.mobile_optimizer import optimize_for_mobile
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # Define paths and parameters
-base_dir = 'Training_data/New (06.06 added, update this name each time)'
-learning_rate = 0.0005
-num_epochs = 50
-batch_size = 64
+base_dir = 'Training_data/New (06.07 added, update this name each time)'
+learning_rate = 0.0001
+num_epochs = 300
+batch_size = 32
+torch.manual_seed(42)
 
 # Check if CUDA is available and set PyTorch to use GPU
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -32,8 +33,8 @@ data_transforms = transforms.Compose([
 full_dataset = datasets.ImageFolder(root=base_dir, transform=data_transforms)
 
 # Split the dataset into training, validation and test
-train_size = int(0.7 * len(full_dataset))
-val_size = int(0.15 * len(full_dataset))
+train_size = int(0.9 * len(full_dataset))
+val_size = int(0.05 * len(full_dataset))
 test_size = len(full_dataset) - train_size - val_size
 train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size])
 
@@ -69,9 +70,9 @@ class CNN(nn.Module):
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
         self.relu2 = nn.ReLU()
         self.maxpool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.fc1 = nn.Linear(32 * 125, 64)
+        self.fc1 = nn.Linear(5*25*32, 64)
         self.relu3 = nn.ReLU()
-        self.fc2 = nn.Linear(64, num_classes)
+        self.fc2 = nn.Linear(64, 9)
         
     def forward(self, x):
         out = self.conv1(x)
@@ -85,11 +86,13 @@ class CNN(nn.Module):
         out = self.relu3(out)
         out = self.fc2(out)
         return out
+
 model = CNN().to(device) # Move the model to GPU    
 
 # Define the loss function and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+# optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Lists to track loss and accuracy
 train_losses = []
@@ -100,6 +103,7 @@ val_accs = []
 best_val_loss = float('inf')
 
 # Training loop
+total_steps = len(train_loader)
 for epoch in range(num_epochs):
     train_loss = 0.0
     val_loss = 0.0
@@ -107,7 +111,7 @@ for epoch in range(num_epochs):
     val_correct = 0
     
     # Training
-    for inputs, labels in train_loader:
+    for i, (inputs, labels) in enumerate(train_loader):
         # Move inputs and labels to GPU
         inputs = inputs.to(device)
         labels = labels.to(device)
@@ -123,6 +127,10 @@ for epoch in range(num_epochs):
         train_correct += (predicted == labels).sum().item()
         loss.backward()
         optimizer.step()
+        
+        # Print training progress
+        if (i+1) % 10 == 0:
+            print(f"Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}")
     
     train_losses.append(train_loss / len(train_dataset))
     train_acc = 100.0 * train_correct / len(train_dataset)
@@ -151,17 +159,23 @@ for epoch in range(num_epochs):
     # Save the model if it is the best so far
     if val_losses[-1] < best_val_loss:
         best_val_loss = val_losses[-1]
-        # torch.save(model.state_dict(), 'best_model.pt')
-        torch.save(model, 'best_model.pt')
-        model.eval()
-        example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
-        traced_script_module = torch.jit.trace(model, example_input)
-        traced_script_module_optimized = optimize_for_mobile(traced_script_module)
-        traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
+        torch.save(model.state_dict(), 'best_model.pt')
+        # torch.save(model, 'best_model.pt')
+        # model.eval()
+        # example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
+        # traced_script_module = torch.jit.trace(model, example_input)
+        # traced_script_module_optimized = optimize_for_mobile(traced_script_module)
+        # traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
+        
+# model.eval()
+# example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
+# traced_script_module = torch.jit.trace(model, example_input)
+# traced_script_module_optimized = optimize_for_mobile(traced_script_module)
+# traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
 
 # Load the best model
-# model.load_state_dict(torch.load('best_model.pt'))
-model = torch.load('best_model.pt')
+model.load_state_dict(torch.load('best_model.pt'))
+# model = torch.load('best_model.pt')
 # Testing
 test_correct = 0
 # Initialize lists for predicted labels and true labels
@@ -183,11 +197,11 @@ test_acc = 100.0 * test_correct / len(test_dataset)
 print('Test Accuracy: {:.2f}'.format(test_acc))
 
 # After testing, convert to TorchScript and save for mobile
-# model.eval()
-# example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
-# traced_script_module = torch.jit.trace(model, example_input)
-# traced_script_module_optimized = optimize_for_mobile(traced_script_module)
-# traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
+model.eval()
+example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
+traced_script_module = torch.jit.trace(model, example_input)
+traced_script_module_optimized = optimize_for_mobile(traced_script_module)
+traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
 
 # Plot the training and validation loss
 fig, axs = plt.subplots(2)
