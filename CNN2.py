@@ -9,14 +9,16 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 from torch.utils.mobile_optimizer import optimize_for_mobile
+from sklearn.model_selection import train_test_split
+from torch.utils.data import Subset
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # Define paths and parameters
-base_dir = 'Training_data/New (06.07 added, update this name each time)'
+base_dir = 'Training_data/ALL(06.08_added)'
 learning_rate = 0.0001
-num_epochs = 250
-batch_size = 32
+num_epochs = 350
+batch_size = 128
 torch.manual_seed(42)
 
 # Check if CUDA is available and set PyTorch to use GPU
@@ -32,18 +34,52 @@ data_transforms = transforms.Compose([
 # Load the datasets
 full_dataset = datasets.ImageFolder(root=base_dir, transform=data_transforms)
 
-# Split the dataset into training, validation and test
-train_size = int(0.9 * len(full_dataset))
-val_size = int(0.05 * len(full_dataset))
-test_size = len(full_dataset) - train_size - val_size
-train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size])
+def stratified_split(dataset, test_size=0.05, val_size=0.05):
+    # get targets
+    targets = np.array(dataset.targets)
+    
+    # split into train and temporary dataset
+    train_idx, temp_idx = train_test_split(
+        np.arange(len(targets)), 
+        test_size=test_size + val_size, 
+        stratify=targets, 
+        random_state=42)
+    
+    # further split temporary dataset into validation and test dataset
+    val_idx, test_idx = train_test_split(
+        temp_idx, 
+        test_size=test_size / (test_size + val_size), 
+        stratify=targets[temp_idx], 
+        random_state=42)
+    
+    return train_idx, val_idx, test_idx
+
+train_idx, val_idx, test_idx = stratified_split(full_dataset)
+
+# create subset based on indices
+train_dataset = Subset(full_dataset, train_idx)
+val_dataset = Subset(full_dataset, val_idx)
+test_dataset = Subset(full_dataset, test_idx)
 
 # Define the dataloaders
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
+
+# # Split the dataset into training, validation and test
+# train_size = int(0.92 * len(full_dataset))
+# val_size = int(0.04 * len(full_dataset))
+# test_size = len(full_dataset) - train_size - val_size
+# train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size])
+
+# # Define the dataloaders
+# train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+# val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+# test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+
 num_classes = len(full_dataset.classes)
+print(f"Number of classes: {num_classes}")
 
 # Define the model
 # model = nn.Sequential(
@@ -72,7 +108,7 @@ class CNN(nn.Module):
         self.maxpool2 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.fc1 = nn.Linear(5*25*32, 64)
         self.relu3 = nn.ReLU()
-        self.fc2 = nn.Linear(64, 9)
+        self.fc2 = nn.Linear(64, num_classes)
         
     def forward(self, x):
         out = self.conv1(x)
@@ -91,7 +127,7 @@ model = CNN().to(device) # Move the model to GPU
 
 # Define the loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 # optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Lists to track loss and accuracy
@@ -101,6 +137,8 @@ train_accs = []
 val_accs = []
 # Initial best loss
 best_val_loss = float('inf')
+# Initial best accuracy
+best_val_acc = 0.0  # set it to 0 initially, as accuracy can't be negative
 
 # Training loop
 total_steps = len(train_loader)
@@ -157,16 +195,17 @@ for epoch in range(num_epochs):
     print('-' * 10)
     
     # Save the model if it is the best so far
-    if val_losses[-1] < best_val_loss:
-        best_val_loss = val_losses[-1]
-        torch.save(model.state_dict(), 'best_model.pt')
-        # torch.save(model, 'best_model.pt')
-        # model.eval()
-        # example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
-        # traced_script_module = torch.jit.trace(model, example_input)
-        # traced_script_module_optimized = optimize_for_mobile(traced_script_module)
-        # traced_script_module_optimized._save_for_lite_interpreter("model_android.ptl")
+    # if val_losses[-1] < best_val_loss:
+    #     best_val_loss = val_losses[-1]
+    #     torch.save(model.state_dict(), 'best_model.pt')
+    #     print('New best model saved with validation loss: ', best_val_loss)
+    # Save the model if it is the best so far
+    if val_acc > best_val_acc:  # If the current epoch's validation accuracy is greater than our stored best
+        best_val_acc = val_acc  # Update our best validation accuracy
+        torch.save(model.state_dict(), 'best_model.pt')  # Save the model state dict
+        print('New best model saved with validation accuracy: ', best_val_acc)
         
+# torch.save(model.state_dict(), 'best_model.pt')
 # model.eval()
 # example_input = torch.rand(1, 3, 20, 100).to(device) # An example input for tracing
 # traced_script_module = torch.jit.trace(model, example_input)
@@ -231,7 +270,7 @@ total_per_class = confusion_mat.sum(axis=1)  # Sum of each row (total true label
 percentage_confusion_mat = confusion_mat / total_per_class[:, np.newaxis]  # Convert counts to percentages
 
 # Plot the confusion matrix with percentages
-class_labels = ["C" + str(i + 1) for i in range(num_classes)]  # Create a list of class labels
+class_labels = ["C" + str(num_classes - i) for i in range(num_classes)]  # Create a list of class labels
 plt.figure(figsize=(10, 8))
 sns.heatmap(percentage_confusion_mat, annot=True, fmt=".2%", cmap="Blues", cbar=False)
 plt.title("Confusion Matrix (Percentages)")
