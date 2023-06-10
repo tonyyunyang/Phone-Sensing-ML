@@ -1,7 +1,11 @@
 import pandas as pd
 
 # read the file
-with open('EastWestAll(06.09_20.00_added)/east.csv', 'r') as f:
+name = 'EastWestAll(06.09_20.00_added)'
+
+
+full = name + '/' + 'east' + '.csv'
+with open(full, 'r') as f:
     data = f.readlines()
 
 # create a list to hold all SSIDs and another to hold the filtered lines
@@ -26,7 +30,8 @@ ssid_counts = pd.Series(ssids).value_counts()
 print(ssid_counts)
 
 # write the filtered lines to a new CSV file
-with open('EastWestAll(06.09_20.00_added)/east_filtered.csv', 'w') as f:
+save = name + '/' + 'east_filtered.csv'
+with open(save, 'w') as f:
     for line in filtered_lines:
         f.write(line + '\n')
         
@@ -35,8 +40,13 @@ with open('EastWestAll(06.09_20.00_added)/east_filtered.csv', 'w') as f:
         
         
         
+        
+        
+        
+        
 # read the file
-with open('EastWestAll(06.09_20.00_added)/west.csv', 'r') as f:
+full = name + '/' + 'west' + '.csv'
+with open(full, 'r') as f:
     data = f.readlines()
 
 # create a list to hold all SSIDs and another to hold the filtered lines
@@ -61,7 +71,8 @@ ssid_counts = pd.Series(ssids).value_counts()
 print(ssid_counts)
 
 # write the filtered lines to a new CSV file
-with open('EastWestAll(06.09_20.00_added)/west_filtered.csv', 'w') as f:
+save = name + '/' + 'west_filtered.csv'
+with open(save, 'w') as f:
     for line in filtered_lines:
         f.write(line + '\n')
 
@@ -72,8 +83,15 @@ with open('EastWestAll(06.09_20.00_added)/west_filtered.csv', 'w') as f:
 
 
 
+
+
+
+
+name2 = 'Floor(06.09_20.00_added)'
+
+full = name2 + '/' + 'floor1' + '.csv'
 # read the file
-with open('Floor(06.09_20.00_added)/floor1.csv', 'r') as f:
+with open(full, 'r') as f:
     data = f.readlines()
 
 # create a list to hold all SSIDs and another to hold the filtered lines
@@ -98,7 +116,8 @@ ssid_counts = pd.Series(ssids).value_counts()
 print(ssid_counts)
 
 # write the filtered lines to a new CSV file
-with open('Floor(06.09_20.00_added)/floor1_filtered.csv', 'w') as f:
+save = name2 + '/' + 'floor1_filtered.csv'
+with open(save, 'w') as f:
     for line in filtered_lines:
         f.write(line + '\n')
         
@@ -115,7 +134,8 @@ with open('Floor(06.09_20.00_added)/floor1_filtered.csv', 'w') as f:
         
         
 # read the file
-with open('Floor(06.09_20.00_added)/floor2.csv', 'r') as f:
+full = name2 + '/' + 'floor2' + '.csv'
+with open(full, 'r') as f:
     data = f.readlines()
 
 # create a list to hold all SSIDs and another to hold the filtered lines
@@ -140,7 +160,8 @@ ssid_counts = pd.Series(ssids).value_counts()
 print(ssid_counts)
 
 # write the filtered lines to a new CSV file
-with open('Floor(06.09_20.00_added)/floor2_filtered.csv', 'w') as f:
+save = name2 + '/' + 'floor2_filtered.csv'
+with open(save, 'w') as f:
     for line in filtered_lines:
         f.write(line + '\n')
         
@@ -157,7 +178,8 @@ with open('Floor(06.09_20.00_added)/floor2_filtered.csv', 'w') as f:
 
 
 # read the file
-with open('Floor(06.09_20.00_added)/floor3.csv', 'r') as f:
+full = name2 + '/' + 'floor3' + '.csv'
+with open(full, 'r') as f:
     data = f.readlines()
 
 # create a list to hold all SSIDs and another to hold the filtered lines
@@ -182,6 +204,7 @@ ssid_counts = pd.Series(ssids).value_counts()
 print(ssid_counts)
 
 # write the filtered lines to a new CSV file
-with open('Floor(06.09_20.00_added)/floor3_filtered.csv', 'w') as f:
+save = name2 + '/' + 'floor3_filtered.csv'
+with open(save, 'w') as f:
     for line in filtered_lines:
         f.write(line + '\n')
