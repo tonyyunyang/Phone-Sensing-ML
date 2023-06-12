@@ -39,11 +39,6 @@ with open(save, 'w') as f:
         
         
         
-        
-        
-        
-        
-        
 # read the file
 full = name + '/' + 'west' + '.csv'
 with open(full, 'r') as f:
