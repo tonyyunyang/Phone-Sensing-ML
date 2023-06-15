@@ -15,7 +15,7 @@ from torch.utils.data import Subset
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # Define paths and parameters
-base_dir = 'Training_data\ALL(06.09_added)'
+base_dir = 'ECHO_HANDHOLD(NEW_TRAINING_DATA)/ALL(2023.06.15_11.40_Updated)/C1_C10'
 learning_rate = 0.00008
 num_epochs = 500
 batch_size = 128
@@ -195,15 +195,15 @@ for epoch in range(num_epochs):
     print('-' * 10)
     
     # Save the model if it is the best so far
-    # if val_losses[-1] < best_val_loss:
-    #     best_val_loss = val_losses[-1]
-    #     torch.save(model.state_dict(), 'best_model.pt')
-    #     print('New best model saved with validation loss: ', best_val_loss)
+    if val_losses[-1] < best_val_loss:
+        best_val_loss = val_losses[-1]
+        torch.save(model.state_dict(), 'best_model.pt')
+        print('New best model saved with validation loss: ', best_val_loss)
     # Save the model if it is the best so far
-    if val_acc > best_val_acc:  # If the current epoch's validation accuracy is greater than our stored best
-        best_val_acc = val_acc  # Update our best validation accuracy
-        torch.save(model.state_dict(), 'best_model.pt')  # Save the model state dict
-        print('New best model saved with validation accuracy: ', best_val_acc)
+    # if val_acc > best_val_acc:  # If the current epoch's validation accuracy is greater than our stored best
+    #     best_val_acc = val_acc  # Update our best validation accuracy
+    #     torch.save(model.state_dict(), 'best_model.pt')  # Save the model state dict
+    #     print('New best model saved with validation accuracy: ', best_val_acc)
         
 # torch.save(model.state_dict(), 'best_model.pt')
 # model.eval()
