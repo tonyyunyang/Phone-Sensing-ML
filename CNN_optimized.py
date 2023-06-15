@@ -15,10 +15,14 @@ from torch.utils.data import Subset
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # Define paths and parameters
-base_dir = 'ECHO_HANDHOLD(NEW_TRAINING_DATA)/ALL(2023.06.15_11.40_Updated)/C1_C10'
-learning_rate = 0.00008
-num_epochs = 500
-batch_size = 128
+base_dir = 'ECHO_HANDHOLD(NEW_TRAINING_DATA)\ALL(2023.06.15_18.00_Updated)\C1_C16'
+# learning_rate = 0.00009
+# num_epochs = 500
+# batch_size = 128
+batch_size = 32
+learning_rate = 0.0001
+num_epochs = 250
+dropout_rate = 0.05
 torch.manual_seed(42)
 
 # Check if CUDA is available and set PyTorch to use GPU
@@ -26,6 +30,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Define the data transformations
 data_transforms = transforms.Compose([
+    transforms.Resize((20, 100)),
     # transforms.Grayscale(),
     transforms.ToTensor(),
     # transforms.Normalize((0.5,), (0.5,)) # normalize to range [-1, 1]
@@ -34,7 +39,7 @@ data_transforms = transforms.Compose([
 # Load the datasets
 full_dataset = datasets.ImageFolder(root=base_dir, transform=data_transforms)
 
-def stratified_split(dataset, test_size=0.025, val_size=0.025):
+def stratified_split(dataset, test_size=0.1, val_size=0.1):
     # get targets
     targets = np.array(dataset.targets)
     
@@ -96,7 +101,34 @@ print(f"Number of classes: {num_classes}")
 #     nn.Linear(128, num_classes)
 # ).to(device) # Move the model to GPU
 
-# Define the CNN architecture
+# # Define the CNN architecture
+# class CNN(nn.Module):
+#     def __init__(self):
+#         super(CNN, self).__init__()
+#         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1)
+#         self.relu1 = nn.ReLU()
+#         self.maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+#         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
+#         self.relu2 = nn.ReLU()
+#         self.maxpool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+#         self.fc1 = nn.Linear(5*25*32, 64)
+#         self.relu3 = nn.ReLU()
+#         self.fc2 = nn.Linear(64, num_classes)
+        
+#     def forward(self, x):
+#         out = self.conv1(x)
+#         out = self.relu1(out)
+#         out = self.maxpool1(out)
+#         out = self.conv2(out)
+#         out = self.relu2(out)
+#         out = self.maxpool2(out)
+#         out = out.view(out.size(0), -1)
+#         out = self.fc1(out)
+#         out = self.relu3(out)
+#         out = self.fc2(out)
+#         return out
+
+# Define the CNN model
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
@@ -106,29 +138,29 @@ class CNN(nn.Module):
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
         self.relu2 = nn.ReLU()
         self.maxpool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.fc1 = nn.Linear(5*25*32, 64)
+        self.fc1 = nn.Linear(32 * 5 * 25, 64)
         self.relu3 = nn.ReLU()
+        self.dropout = nn.Dropout(dropout_rate)
         self.fc2 = nn.Linear(64, num_classes)
         
+
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.relu1(out)
-        out = self.maxpool1(out)
-        out = self.conv2(out)
-        out = self.relu2(out)
-        out = self.maxpool2(out)
-        out = out.view(out.size(0), -1)
-        out = self.fc1(out)
-        out = self.relu3(out)
-        out = self.fc2(out)
-        return out
+        x = self.relu1(self.conv1(x))
+        x = self.maxpool1(x)
+        x = self.relu2(self.conv2(x))
+        x = self.maxpool2(x)
+        x = x.view(x.size(0), -1)
+        x = self.relu3(self.fc1(x))
+        x = self.dropout(x)
+        x = self.fc2(x)
+        return x
 
 model = CNN().to(device) # Move the model to GPU    
 
 # Define the loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
-# optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+# optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Lists to track loss and accuracy
 train_losses = []
