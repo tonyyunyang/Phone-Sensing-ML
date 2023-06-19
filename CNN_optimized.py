@@ -15,7 +15,7 @@ from torch.utils.data import Subset
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # Define paths and parameters
-base_dir = 'ECHO_HANDHOLD(NEW_TRAINING_DATA)\ALL(2023.06.16_16.00_Updated)\C11_C16'
+base_dir = 'ECHO_HANDHOLD(NEW_TRAINING_DATA)\ALL(2023.06.19_09.20_Updated)\C1_C9'
 # learning_rate = 0.00009
 # num_epochs = 500
 # batch_size = 128
